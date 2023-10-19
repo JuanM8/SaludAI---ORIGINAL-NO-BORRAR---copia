@@ -7,6 +7,18 @@ const SensoresSchema = new Schema(
       type: String,
       required: false // Es obligatorio tener un valor de altura para cada registro (true)
     },
+    temperatura:{
+      type: String,
+      required: false
+    },
+    genero:{
+      type: String,
+      required: false
+    },
+    edad:{
+      type: String,
+      required: false
+    },
     // Campo para registrar la fecha y hora en que se registraron los datos (se generará automáticamente)
     timestamp: {
       type: Date,
