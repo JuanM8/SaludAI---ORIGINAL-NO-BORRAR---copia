@@ -1,0 +1,11 @@
+body {
+  background: url('/img/fondo.jpg'); /* Usa la función url() para especificar la imagen como fondo */
+  background-size: auto;
+  background-repeat: repeat;
+  background-position: center center;
+}
+.logo {
+  width: 50%;
+} 
+
+

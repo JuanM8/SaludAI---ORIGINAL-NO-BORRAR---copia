@@ -1,0 +1,75 @@
+  <!-- Main Sidebar Container -->
+<aside class="main-sidebar bg-white elevation-4" style="background-color: #166a9f;">
+    <!-- Brand Logo -->
+    <a href="/" class="brand-link">
+      <!--img src="/img/logo.png" alt="Logo" class="brand-image img-circle elevation-3"
+           style="opacity: .9"-->
+     <span class="brand-text font-weight-bold">Mediciones</span>
+
+    </a>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <!-- Sidebar user panel (optional) -->
+       <div class="user-panel mt-3 pb-3 mb-3 d-flex">
+        <div class="image">
+          <img src="/img/user.png" class="img-circle elevation-2" alt="User Image">
+        </div>
+        <div class="info">
+          <a href="/" class="d-block">{{user.name}}</a>
+        </div>
+      </div> 
+
+      <!-- Sidebar Menu -->
+      <nav class="mt-2">
+        <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+          <!-- Add icons to the links using the .nav-icon class
+               with font-awesome or any other icon font library -->
+
+        
+        {{#if user}}
+        <li class="nav-item mb-2">
+      <button class="btn btn-primary btn-block" style="background-color: #87CEFA; color: #fff;" onclick="window.location.href='/interfaz'">
+        <i class="fas fa-satellite-dish"></i> Mis sensores
+      </button>
+    </li>
+    <li class="nav-item mb-2">
+      <button class="btn btn-primary btn-block" style="background-color: #87CEFA; color: #fff;" onclick="window.location.href='/interfaz/addsensor'">
+        <i class="fas fa-plus"></i> Registrar Sensor
+      </button>
+    </li>
+    <li class="nav-item mb-2">
+    
+       <li class="nav-item">
+    <a href="/users/logout" class="nav-link">
+        <i class="fa fa-times-circle-o"></i>
+        <p style="color: red;">Salir</p>
+    </a>
+</li>
+   
+        
+            
+
+        {{else}}
+            <li class="nav-item mb-2">
+      <button class="btn btn-primary btn-block" style="background-color: #87CEFA; color: #fff;" onclick="window.location.href='/users/signin'">
+        <i class="fa fa-door-open"></i> Login
+      </button>
+    </li>
+    <li class="nav-item mb-2">
+      <button class="btn btn-primary btn-block" style="background-color: #87CEFA; color: #fff;" onclick="window.location.href='/users/signup'">
+        <i class="fa fa-address-card" ></i> signin
+      </button>
+    </li>
+    <li class="nav-item mb-2">
+      
+
+        {{/if}}
+
+        </ul>
+      </nav>
+      <!-- /.sidebar-menu -->
+    </div>
+    <!-- /.sidebar -->
+  </aside>
+

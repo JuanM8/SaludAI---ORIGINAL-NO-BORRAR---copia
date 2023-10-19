@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Gráficas de temperatura</title>
+  <script src="https://code.highcharts.com/highcharts.js"></script>
+</head>
+<body>
+  <div id="grafica1"></div>
+  <div id="grafica2"></div>
+  <div id="grafica3"></div>
+
+  <script>
+    // Obtén los datos pasados desde el controlador
+    var minuto = ["{{hora0}}","{{hora1}}","{{hora2}}","{{hora3}}","{{hora4}}","{{hora5}}","{{hora6}}","{{hora7}}","{{hora8}}","{{hora9}}"];
+    var minut = [{{minuto}}];
+    var sensor1 = [{{sensor1}}];
+    var sensor2 = [{{sensor2}}];    
+    var sensor3 = [{{sensor3}}];
+    var vs1 = "{{vs1}}";     
+    var vs2 = "{{vs2}}";  
+    var vs3 = "{{vs3}}"; 
+     
+
+    // Función para verificar si un arreglo tiene elementos
+    function tieneDatos(arreglo) {
+      return arreglo.length > 0;
+    }
+
+    // Crear la primera gráfica si el sensor1 tiene datos
+    if (tieneDatos(sensor1)) {
+      Highcharts.chart('grafica1', {
+        chart: { type: 'line' },
+        title: { text: 'Gráfica de ' + vs1 }, // Usamos el valor de vs1 como parte del título
+        xAxis: {
+          type: 'datetime',
+          categories: minuto
+        },
+        yAxis: {
+          title: {
+            text: vs1
+          }
+        },
+        series: [{
+          name: vs1,
+          data: sensor1,
+          color: 'rgba(75, 192, 192, 1)',
+          lineWidth: 1
+        }]
+      });
+    }
+
+    // Crear la segunda gráfica si el sensor2 tiene datos
+    if (tieneDatos(sensor2)) {
+      Highcharts.chart('grafica2', {
+        chart: { type: 'line' },
+        title: { text: 'Gráfica de ' + vs2 },
+        xAxis: {
+          type: 'datetime',
+          categories: minuto
+        },
+        yAxis: {
+          title: {
+            text: vs2
+          }
+        },
+        series: [{
+          name: vs2,
+          data: sensor2,
+          color: 'rgba(192, 75, 192, 1)',
+          lineWidth: 1
+        }]
+      });
+    }
+
+    // Crear la tercera gráfica si el sensor3 tiene datos
+    if (tieneDatos(sensor3)) {
+      Highcharts.chart('grafica3', {
+        chart: { type: 'line' },
+        title: { text: 'Gráfica de ' + vs3 },
+        xAxis: {
+          type: 'datetime',
+          categories: minuto
+        },
+        yAxis: {
+          title: {
+            text: vs3
+          }
+        },
+        series: [{
+          name: vs3,
+          data: sensor3,
+          color: 'rgba(192, 192, 75, 1)',
+          lineWidth: 1
+        }]
+      });
+    }
+  </script>
+</body>
+</html>
+
+
+
