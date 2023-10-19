@@ -86,9 +86,13 @@ const SensoresModel = require('./models/sensores'); // Importa el modelo de la b
 app.post('/sensor', async (req, res) => {
 //sensoresCtrl.createSensor = async (req, res) => {
   try {
-    const { altura } = req.body.sensores[0]; 
-    console.log('Altura recibida del cliente:', altura);
-    const sensor = new SensoresModel({ altura });
+    const { altura, temperatura, genero, edad } = req.body.sensores[0]; 
+    console.log('Datos recibidos del cliente:');
+    console.log('Altura: ', altura);
+    console.log('Temperatura: ', temperatura);
+    console.log('Genero: ', genero);
+    console.log('Edad: ', edad);
+    const sensor = new SensoresModel({ temperatura, altura, genero, edad });
     await sensor.save();
 
     console.log("Sensor guardado en MongoDB:", sensor);
