@@ -8,9 +8,8 @@ const passport = require('passport');
 const morgan = require('morgan');
 const body_parser = require('body-parser'); // Importa body-parser
 const Handlebars = require('handlebars');
+const PDFDocument = require('pdfkit');
 const { allowInsecurePrototypeAccess } = require('@handlebars/allow-prototype-access');
-
-
 
 const app = express();
 require('./config/passport');
@@ -60,6 +59,7 @@ app.use(body_parser.json());
 // 1. Importar el modelo que se encuentra en src\models\sensores.js
 
 const SensoresModel = require('./models/sensores'); // Importa el modelo de la base de datos
+const User = require('./models/User');
 
 // 2. Crear el controlador el cual va a definir que se realizará con el modelo
 
@@ -204,6 +204,57 @@ app.get("/descargar-excel", async (req, res) => {
     console.error(error);
         res.status(500).send('Error del servidor :(');
   }
-  
+
+  app.get('/generar-pdf', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    // Consulta la base de datos para obtener las últimas variables almacenadas
+    const ultimosDatos = await SensoresModel.find().sort({ timestamp: -1 }).limit(1);
+    const usuario = await User.findById(userId);
+
+    if (ultimosDatos.length > 0) {
+      const ultimoDato = ultimosDatos[0];
+
+      // Crear un nuevo documento PDF
+      const doc = new PDFDocument();
+
+      // Definir el nombre del archivo de salida
+      const filename = 'examen_clinico.pdf';
+
+      // Configurar encabezado HTTP para la descarga del PDF
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Type', 'application/pdf');
+
+      // Pipe el PDF a la respuesta HTTP
+      doc.pipe(res);
+
+      // Agregar contenido al PDF con las últimas variables almacenadas
+      doc.font('Helvetica-Bold').fontSize(20).text('Examen Clínico', { align: 'center' });
+      doc.moveDown();
+      doc.font('Helvetica').fontSize(12).text(`Fecha: ${new Date().toLocaleDateString()}`);
+      doc.moveDown();
+      doc.font('Helvetica-Bold').fontSize(14).text(`Nombre del Paciente: ${usuario.name}`);
+      doc.font('Helvetica').fontSize(12).text(`Email: ${usuario.email}`);
+      doc.moveDown();
+      doc.font('Helvetica-Bold').fontSize(14).text('Resultados del Examen:', { underline: true });
+      doc.moveDown();
+      doc.font('Helvetica').fontSize(12).text(`Altura: ${ultimoDato.altura} cm`);
+      doc.font('Helvetica').fontSize(12).text(`Temperatura: ${ultimoDato.temperatura} °C`);
+      doc.font('Helvetica').fontSize(12).text(`Género: ${ultimoDato.genero}`);
+      doc.font('Helvetica').fontSize(12).text(`Edad: ${ultimoDato.edad} años`);
+      doc.moveDown();
+      doc.font('Helvetica-Bold').fontSize(14).text('Conclusiones y Recomendaciones:', { underline: true });
+      doc.moveDown();
+      doc.font('Helvetica').fontSize(12).text('Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed eget ligula nec odio facilisis ultrices. Nulla facilisi. Sed luctus nisi non ligula posuere, vitae fermentum turpis viverra.');
+
+      // Finalizar el PDF
+      doc.end();
+    } else {
+      res.status(404).send('No se encontraron datos en la base de datos.');
+    }
+  } catch (error) {
+    console.error('Error al recuperar datos de MongoDB', error);
+    res.status(500).send('Error al recuperar datos de MongoDB');
+  }
 });
 module.exports = app;
