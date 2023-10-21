@@ -204,6 +204,7 @@ app.get("/descargar-excel", async (req, res) => {
     console.error(error);
         res.status(500).send('Error del servidor :(');
   }
+});
 
   app.get('/generar-pdf', async (req, res) => {
   try {
