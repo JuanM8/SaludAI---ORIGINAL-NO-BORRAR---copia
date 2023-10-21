@@ -4,7 +4,7 @@
     <a href="/" class="brand-link">
       <!--img src="/img/logo.png" alt="Logo" class="brand-image img-circle elevation-3"
            style="opacity: .9"-->
-     <span class="brand-text font-weight-bold">Mediciones</span>
+     <span class="brand-text font-weight-bold">SaludAI</span>
 
     </a>
 
@@ -30,12 +30,12 @@
         {{#if user}}
         <li class="nav-item mb-2">
       <button class="btn btn-primary btn-block" style="background-color: #87CEFA; color: #fff;" onclick="window.location.href='/interfaz'">
-        <i class="fas fa-satellite-dish"></i> Mis sensores
+        <i class="fas fa-satellite-dish"></i> Mis resultados
       </button>
     </li>
     <li class="nav-item mb-2">
       <button class="btn btn-primary btn-block" style="background-color: #87CEFA; color: #fff;" onclick="window.location.href='/interfaz/addsensor'">
-        <i class="fas fa-plus"></i> Registrar Sensor
+        <i class="fas fa-plus"></i> Registrar datos
       </button>
     </li>
     <li class="nav-item mb-2">
@@ -46,19 +46,16 @@
         <p style="color: red;">Salir</p>
     </a>
 </li>
-   
-        
-            
 
         {{else}}
             <li class="nav-item mb-2">
       <button class="btn btn-primary btn-block" style="background-color: #87CEFA; color: #fff;" onclick="window.location.href='/users/signin'">
-        <i class="fa fa-door-open"></i> Login
+        <i class="fa fa-door-open"></i> Iniciar sesión
       </button>
     </li>
     <li class="nav-item mb-2">
       <button class="btn btn-primary btn-block" style="background-color: #87CEFA; color: #fff;" onclick="window.location.href='/users/signup'">
-        <i class="fa fa-address-card" ></i> signin
+        <i class="fa fa-address-card" ></i> Registrarse
       </button>
     </li>
     <li class="nav-item mb-2">
