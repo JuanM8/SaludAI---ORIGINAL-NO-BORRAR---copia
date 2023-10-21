@@ -122,6 +122,8 @@ let fechaAño = date.getUTCFullYear();
 
 app.get("/descargar-excel", async (req, res) => {
   try{
+    const userId = req.user.id;
+    const usuario = await User.findById(userId);
     const latestsensor1 = await SensoresModel.find({ 
       altura: { $ne: null },
       temperatura: { $ne: null },
@@ -166,7 +168,7 @@ app.get("/descargar-excel", async (req, res) => {
   ws.cell(2, 7).string("Promedio de oxigeno en sangre").style(EstiloColumna);
 
   // Nombre de la fila nombre
-  ws.cell(1, 2).string("Nombre").style(EstiloContenido);
+  ws.cell(1, 2).string(usuario.name).style(EstiloContenido);
 
   //Integrar datos automaticamente usando un bucle
   // Escribir datos en el archivo Excel
