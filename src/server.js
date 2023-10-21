@@ -10,9 +10,10 @@ const body_parser = require('body-parser'); // Importa body-parser
 const Handlebars = require('handlebars');
 const { allowInsecurePrototypeAccess } = require('@handlebars/allow-prototype-access');
 
+
+
 const app = express();
 require('./config/passport');
-
 
 app.set('port', process.env.PORT || 4000);
 app.set('views', path.join(__dirname, 'views'));
@@ -54,21 +55,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Configura middleware para analizar JSON
 app.use(body_parser.json());
 
-/*
-app.post('/sensor', (req, res) => {
-  try {
-    const datos = req.body;
-    console.log('Datos recibidos desde el ESP32:', datos);
-    console.log('Datos guardados en MongoDB:', Sensores);
-    res.status(200).json({ mensaje: 'Datos recibidos con éxito', altura: datos.Sensores[0].altura});
-  } catch (error) {
-    console.error('Error al procesar la solicitud:', error);
-    res.status(500).json({ error: 'Error interno del servidor' });
-  }
-});
-*/
-
-//////////////////// Manejar los datos recibidos desde el esp32 usando POST y guardarlos en mongoDB //////////////////////
+//////////////////// Manejar los datos recibidos desde el esp32 usando POST, GET y guardarlos en mongoDB //////////////////////
 
 // 1. Importar el modelo que se encuentra en src\models\sensores.js
 
@@ -76,23 +63,16 @@ const SensoresModel = require('./models/sensores'); // Importa el modelo de la b
 
 // 2. Crear el controlador el cual va a definir que se realizará con el modelo
 
-//const sensoresCtrl = {}; - Aunque funciona sin esto tengo dudas XD
-
 // En el metodo CRUD (Create, Read, Update & Delete)
 // Dado que solo queremos enviar y recibir los datos de mongoDB no será necesario Update y Delete
 
 // Endpoint POST para guardar datos en MongoDB:
 // Segun esto, empezará a enviar los datos a la direccion /sensor
 app.post('/sensor', async (req, res) => {
-//sensoresCtrl.createSensor = async (req, res) => {
   try {
-    const { altura, temperatura, genero, edad } = req.body.sensores[0]; 
-    console.log('Datos recibidos del cliente:');
-    console.log('Altura: ', altura);
-    console.log('Temperatura: ', temperatura);
-    console.log('Genero: ', genero);
-    console.log('Edad: ', edad);
-    const sensor = new SensoresModel({ temperatura, altura, genero, edad });
+    const { altura } = req.body.sensores[0]; 
+    console.log('Altura recibida del cliente:', altura);
+    const sensor = new SensoresModel({ altura });
     await sensor.save();
 
     console.log("Sensor guardado en MongoDB:", sensor);
@@ -103,31 +83,122 @@ app.post('/sensor', async (req, res) => {
     res.status(500).send('Error del servidor');
   }
 });
-// Error interno del servidor
+
+
 // Maneja la solicitud GET a la URL /sensores y renderiza la página "sensor.hbs" con los datos de la base de datos
 // Ruta para manejar solicitudes GET a '/sensores'
 app.get('/sensores', async (req, res) => {
   try {
-    const sensores = await SensoresModel.find();
-    res.render('/sensor', { sensores });
+    const latestsensor = await SensoresModel.findOne({ 
+      altura: { $ne: null },
+      temperatura: { $ne: null },
+      genero: { $ne: null },
+      edad: { $ne: null }
+    }, {}, { sort: { 'timestamp': -1 } });
+    
+    res.render('sensor', { latestsensor }); // Pasar las constantes a la plantilla
+    console.log(latestsensor);
+    console.log("Datos obtenidos con éxito 8D");
   } catch (error) {
     console.error(error);
-    res.status(500).send('Error del servidor');
+    res.status(500).send('Error del servidor :(');
   }
 });
 
+////////////////////4. Crear excel ////////////////////////////
+const xl = require('excel4node'); // Para usar la función de excel
+const fs = require('fs');
 
-/*¨En este código, he eliminado la necesidad de un controlador adicional para las solicitudes GET. Cuando se hace una solicitud 
-GET a la URL /sensores, se obtienen los datos de la base de datos MongoDB y se renderizan en la página "sensor.hbs" utilizando 
-el motor de plantillas Handlebars. Esto se hace dentro de la misma función de enrutamiento, evitando así la necesidad de manejar 
-dos solicitudes al mismo tiempo. -ChatGPT*/
+//FECHA
+let date = new Date();
+let fechaDia = date.getUTCDate();
+let fechaMes = (date.getUTCMonth()) + 1; 
+let fechaAño = date.getUTCFullYear();
 
-/*PD: No he borrado el controlador y las rutas por si es necesario o se puede usar desde diferentes archivos */
+app.get("/descargar-excel", async (req, res) => {
+  try{
+    const latestsensor1 = await SensoresModel.find({ 
+      altura: { $ne: null },
+      temperatura: { $ne: null },
+      genero: { $ne: null },
+      edad: { $ne: null }
+    }, {}, { sort: { 'timestamp': -1 } });
 
-//3. (opcional) usar rutas para controlar en que momento se enviarán los archivos
-// Supongo que es mas funcional cuando se tienen diferentes archivos
+    // Crear un nuevo libro de Excel (Workbook)
+  var wb = new xl.Workbook();
+  // Construir el nombre del archivo
+  let nombreArchivo = "Nombre " + fechaDia + "_" + fechaMes + "_" + fechaAño + ".";
+  // Añadir una nueva hoja al libro (Workbook) con el nombre del archivo
+  var ws = wb.addWorksheet(nombreArchivo);
 
-//app.post('/sensor', sensoresCtrl.createSensor); // Enviar los datos a mongoDB
-//router.get('/sensores', sensoresCtrl.getSensores); // Extraer de mongoDB
+  // Estilo del titulo
+  var EstiloColumna = wb.createStyle({
+      font: {
+          name: 'Arial',
+          color: '#000000',
+          size: 12,
+          bold: true,
+      }
+  });
 
+  //Estilo del contenido
+  var EstiloContenido = wb.createStyle({
+      font: {
+          name: 'Arial',
+          color: '#494949',
+          size: 11,
+      }
+  });
+
+  //Nombres de las columnas
+  ws.cell(1, 1).string("Nombre").style(EstiloColumna);
+  ws.cell(2, 1).string("Sexo").style(EstiloColumna);
+  ws.cell(2, 2).string("Edad").style(EstiloColumna);
+  ws.cell(2, 3).string("Altura").style(EstiloColumna);
+  ws.cell(2, 4).string("Peso").style(EstiloColumna);
+  ws.cell(2, 5).string("Temperatura corporal").style(EstiloColumna);
+  ws.cell(2, 6).string("Promedio de ritmo cardiaco").style(EstiloColumna);
+  ws.cell(2, 7).string("Promedio de oxigeno en sangre").style(EstiloColumna);
+
+  // Nombre de la fila nombre
+  ws.cell(1, 2).string("Nombre").style(EstiloContenido);
+
+  //Integrar datos automaticamente usando un bucle
+  // Escribir datos en el archivo Excel
+  for (let i = 0; i < latestsensor1.length; i++) {
+    const registro = latestsensor1[i];
+    ws.cell(i + 3, 1).string(registro.genero).style(EstiloContenido);
+    ws.cell(i + 3, 2).string(registro.edad).style(EstiloContenido);
+    ws.cell(i + 3, 3).string(registro.altura).style(EstiloContenido);
+    ws.cell(i + 3, 5).string(registro.temperatura).style(EstiloContenido);
+  }
+
+
+    //Ruta del archivo
+    const pathExcel = path.join(__dirname, 'excel', nombreArchivo + '.xlsx');
+    console.log("Nombre del archivo completo: ", pathExcel); // Imprime el nombre completo del archivo
+    //Escribir o guardar
+    wb.write(pathExcel, function(err, stats){
+        if(err) console.log(err);
+        else{
+
+            // Crear función y descargar archivo
+            function downloadFile(){res.download(pathExcel);}
+            downloadFile();
+
+            // Borrar archivo
+            fs.rm(pathExcel, function(err){
+                if(err) console.log(err);
+                else  console.log("Archivo descargado y borrado del servidor correctamente");
+            });
+        }
+    });
+    console.log("Archivo", nombreArchivo,"descargado con exito");
+    //res.status(201).json(latestsensor1);    
+  }catch (error){
+    console.error(error);
+        res.status(500).send('Error del servidor :(');
+  }
+  
+});
 module.exports = app;
