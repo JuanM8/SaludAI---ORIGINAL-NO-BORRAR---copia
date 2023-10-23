@@ -17,7 +17,7 @@ usersCtrl.renderSignUpForm = (req, res) => {
 
 usersCtrl.singup = async (req, res) => {
   let errors = [];
-  const { name, email, password, confirm_password, claveregistro, codigo, confirmar_codigo } = req.body;
+  const { name, email, password, confirm_password, claveregistro, codigo } = req.body;
   //clave de registro para no permitir registros no deseados
   if (claveregistro != "Salud_ai") {
     errors.push({ text: "Clave de registro no coincide" });
@@ -35,17 +35,19 @@ usersCtrl.singup = async (req, res) => {
       name,
       email,
       password,
-      confirm_password
+      confirm_password,
+      codigo
     });
   } else {
     // Look for email coincidence
     const emailUser = await User.findOne({ email: email });
-    if (emailUser) {
-      req.flash("error_msg", "The Email is already in use.");
+    const ComprobarCodigo = await User.findOne({ codigo: codigo });
+    if (emailUser, ComprobarCodigo) {
+      req.flash("error_msg", "El código o el correo ya están en uso.");
       res.redirect("/users/signup");
     } else {
       // Saving a New User
-      const newUser = new User({ name, email, password });
+      const newUser = new User({ name, email, password, codigo });
       newUser.password = await newUser.encryptPassword(password);
       await newUser.save();
       req.flash("success_msg", "You are registered.");
