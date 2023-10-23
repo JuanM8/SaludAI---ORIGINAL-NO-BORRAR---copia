@@ -123,19 +123,32 @@ let fechaAño = date.getUTCFullYear();
 
 app.get("/descargar-excel", async (req, res) => {
   try{
+    // Obtén el código del usuario actual desde la colección 'users'
     const userId = req.user.id;
     const usuario = await User.findById(userId);
-    const latestsensor1 = await SensoresModel.find({ 
+    const codigoUsuario = usuario.codigo; // Suponiendo que 'codigo' es el campo en la colección 'users'
+
+    const latestsensor = await SensoresModel.find({ 
+      altura: { $ne: null },
+      temperatura: { $ne: null },
+      edad: { $ne: null }
+    }, {}, { sort: { 'timestamp': -1 } });
+    const latestsensor1 = await SensoresModel.findOne({
+      genero: {$ne: null},
+    }, {}, { sort: { 'timestamp': -1 } });
+    const actualsensor = await SensoresModel.find({ 
       altura: { $ne: null },
       temperatura: { $ne: null },
       genero: { $ne: null },
-      edad: { $ne: null }
-    }, {}, { sort: { 'timestamp': -1 } });
+      edad: { $ne: null },
+      codigo: codigoUsuario
+    }, {}, {});
 
-    // Crear un nuevo libro de Excel (Workbook)
+    if (actualsensor) {
+      // Crear un nuevo libro de Excel (Workbook)
   var wb = new xl.Workbook();
   // Construir el nombre del archivo
-  let nombreArchivo = "Nombre " + fechaDia + "_" + fechaMes + "_" + fechaAño + ".";
+  let nombreArchivo = usuario.name + " " + fechaDia + "_" + fechaMes + "_" + fechaAño + ".";
   // Añadir una nueva hoja al libro (Workbook) con el nombre del archivo
   var ws = wb.addWorksheet(nombreArchivo);
 
@@ -159,34 +172,40 @@ app.get("/descargar-excel", async (req, res) => {
   });
 
   //Nombres de las columnas
+  //principales
   ws.cell(1, 1).string("Nombre").style(EstiloColumna);
-  ws.cell(2, 1).string("Sexo").style(EstiloColumna);
-  ws.cell(2, 2).string("Edad").style(EstiloColumna);
-  ws.cell(2, 3).string("Altura").style(EstiloColumna);
-  ws.cell(2, 4).string("Peso").style(EstiloColumna);
-  ws.cell(2, 5).string("Temperatura corporal").style(EstiloColumna);
-  ws.cell(2, 6).string("Promedio de ritmo cardiaco").style(EstiloColumna);
-  ws.cell(2, 7).string("Promedio de oxigeno en sangre").style(EstiloColumna);
+  ws.cell(1, 4).string("Sexo").style(EstiloColumna);
+  ws.cell(1, 7).string("Código").style(EstiloColumna);
 
-  // Nombre de la fila nombre
+  // datos obtenidos
+  ws.cell(2, 1).string("Edad").style(EstiloColumna);
+  ws.cell(2, 2).string("Altura").style(EstiloColumna);
+  ws.cell(2, 3).string("Peso").style(EstiloColumna);
+  ws.cell(2, 4).string("Temperatura corporal").style(EstiloColumna);
+  ws.cell(2, 5).string("Promedio de ritmo cardiaco").style(EstiloColumna);
+  ws.cell(2, 6).string("Promedio de oxigeno en sangre").style(EstiloColumna);
+
+  // Nombre de la fila nombre y sexo
   ws.cell(1, 2).string(usuario.name).style(EstiloContenido);
+  ws.cell(1, 5).string(latestsensor1.genero).style(EstiloContenido);
+  ws.cell(1, 8).number(usuario.codigo).style(EstiloContenido);
 
   //Integrar datos automaticamente usando un bucle
   // Escribir datos en el archivo Excel
-  for (let i = 0; i < latestsensor1.length; i++) {
-    const registro = latestsensor1[i];
-    ws.cell(i + 3, 1).string(registro.genero).style(EstiloContenido);
-    ws.cell(i + 3, 2).number(registro.edad).style(EstiloContenido);
-    ws.cell(i + 3, 3).number(registro.altura).style(EstiloContenido);
-    ws.cell(i + 3, 5).number(registro.temperatura).style(EstiloContenido);
+  for (let i = 0; i < actualsensor.length; i++) {
+    const registro = actualsensor[i];
+    //ws.cell(i + 3, 1).string(registro.genero).style(EstiloContenido);
+    ws.cell(i + 3, 1).number(registro.edad).style(EstiloContenido);
+    ws.cell(i + 3, 2).number(registro.altura).style(EstiloContenido);
+    ws.cell(i + 3, 4).number(registro.temperatura).style(EstiloContenido);
   }
 
 
-    //Ruta del archivo
-    const pathExcel = path.join(__dirname, 'excel', nombreArchivo + '.xlsx');
-    console.log("Nombre del archivo completo: ", pathExcel); // Imprime el nombre completo del archivo
-    //Escribir o guardar
-    wb.write(pathExcel, function(err, stats){
+  //Ruta del archivo
+  const pathExcel = path.join(__dirname, 'excel', nombreArchivo + '.xlsx');
+  console.log("Nombre del archivo completo: ", pathExcel); // Imprime el nombre completo del archivo
+  //Escribir o guardar
+  wb.write(pathExcel, function(err, stats){
         if(err) console.log(err);
         else{
 
@@ -198,11 +217,15 @@ app.get("/descargar-excel", async (req, res) => {
             fs.rm(pathExcel, function(err){
                 if(err) console.log(err);
                 else  console.log("Archivo descargado y borrado del servidor correctamente");
+                console.log(actualsensor);
             });
         }
     });
     console.log("Archivo", nombreArchivo,"descargado con exito");
-    //res.status(201).json(latestsensor1);    
+    } else {
+      console.log('No se encontraron datos del sensor para el usuario actual');
+      res.status(404).send('No se encontraron datos del sensor para el usuario actual');
+    }
   }catch (error){
     console.error(error);
         res.status(500).send('Error del servidor :(');
@@ -239,6 +262,7 @@ app.get("/descargar-excel", async (req, res) => {
       doc.moveDown();
       doc.font('Helvetica-Bold').fontSize(14).text(`Nombre del Paciente: ${usuario.name}`);
       doc.font('Helvetica').fontSize(12).text(`Email: ${usuario.email}`);
+       doc.font('Helvetica').fontSize(12).text(`Codigo: ${usuario.codigo}`)
       doc.moveDown();
       doc.font('Helvetica-Bold').fontSize(14).text('Resultados del Examen:', { underline: true });
       doc.moveDown();
