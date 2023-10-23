@@ -127,12 +127,6 @@ app.get("/descargar-excel", async (req, res) => {
     const userId = req.user.id;
     const usuario = await User.findById(userId);
     const codigoUsuario = usuario.codigo; // Suponiendo que 'codigo' es el campo en la colección 'users'
-
-    const latestsensor = await SensoresModel.find({ 
-      altura: { $ne: null },
-      temperatura: { $ne: null },
-      edad: { $ne: null }
-    }, {}, { sort: { 'timestamp': -1 } });
     const latestsensor1 = await SensoresModel.findOne({
       genero: {$ne: null},
     }, {}, { sort: { 'timestamp': -1 } });
@@ -194,13 +188,11 @@ app.get("/descargar-excel", async (req, res) => {
   // Escribir datos en el archivo Excel
   for (let i = 0; i < actualsensor.length; i++) {
     const registro = actualsensor[i];
-    //ws.cell(i + 3, 1).string(registro.genero).style(EstiloContenido);
     ws.cell(i + 3, 1).number(registro.edad).style(EstiloContenido);
     ws.cell(i + 3, 2).number(registro.altura).style(EstiloContenido);
     ws.cell(i + 3, 4).number(registro.temperatura).style(EstiloContenido);
   }
-
-
+      
   //Ruta del archivo
   const pathExcel = path.join(__dirname, 'excel', nombreArchivo + '.xlsx');
   console.log("Nombre del archivo completo: ", pathExcel); // Imprime el nombre completo del archivo
