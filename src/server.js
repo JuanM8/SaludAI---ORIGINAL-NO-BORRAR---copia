@@ -70,13 +70,14 @@ const User = require('./models/User');
 // Segun esto, empezará a enviar los datos a la direccion /sensor
 app.post('/sensor', async (req, res) => {
   try {
-    const { altura, temperatura, genero, edad } = req.body.sensores[0]; 
+    const { altura, temperatura, genero, edad, codigo } = req.body.sensores[0]; 
     console.log('Datos recibidos del cliente:');
     console.log('Altura: ', altura);
     console.log('Temperatura: ', temperatura);
     console.log('Genero: ', genero);
     console.log('Edad: ', edad);
-    const sensor = new SensoresModel({ temperatura, altura, genero, edad });
+    console.log('Codigo: ', codigo);
+    const sensor = new SensoresModel({ temperatura, altura, genero, edad, codigo });
     await sensor.save();
 
 
@@ -175,9 +176,9 @@ app.get("/descargar-excel", async (req, res) => {
   for (let i = 0; i < latestsensor1.length; i++) {
     const registro = latestsensor1[i];
     ws.cell(i + 3, 1).string(registro.genero).style(EstiloContenido);
-    ws.cell(i + 3, 2).string(registro.edad).style(EstiloContenido);
-    ws.cell(i + 3, 3).string(registro.altura).style(EstiloContenido);
-    ws.cell(i + 3, 5).string(registro.temperatura).style(EstiloContenido);
+    ws.cell(i + 3, 2).number(registro.edad).style(EstiloContenido);
+    ws.cell(i + 3, 3).number(registro.altura).style(EstiloContenido);
+    ws.cell(i + 3, 5).number(registro.temperatura).style(EstiloContenido);
   }
 
 
