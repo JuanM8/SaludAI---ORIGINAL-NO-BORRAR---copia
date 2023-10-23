@@ -10,18 +10,23 @@ usersCtrl.renderSignUpForm = (req, res) => {
   res.render('users/signup');
 };
 
+usersCtrl.renderSignUpForm = (req, res) => {
+  const codigo = Math.floor(100000 + Math.random() * 900000); //Generar un código de 6 digitos
+  res.render('users/signup', { codigo });
+}
+
 usersCtrl.singup = async (req, res) => {
   let errors = [];
-  const { name, email, password, confirm_password,claveregistro } = req.body;
+  const { name, email, password, confirm_password, claveregistro, codigo, confirmar_codigo } = req.body;
   //clave de registro para no permitir registros no deseados
-  if (claveregistro != "IOTopia") {
+  if (claveregistro != "Salud_ai") {
     errors.push({ text: "Clave de registro no coincide" });
   }
   if (password != confirm_password) {
-    errors.push({ text: "Passwords do not match." });
+    errors.push({ text: "Las contraseñas no coinciden" });
   }
   if (password.length < 4) {
-    errors.push({ text: "Passwords must be at least 4 characters." });
+    errors.push({ text: "La contraseña debe contener al menos 4 caracteres." });
   }
   if (errors.length > 0) {
     res.render("users/signup", {
