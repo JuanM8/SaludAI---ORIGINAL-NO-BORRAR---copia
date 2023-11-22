@@ -1,0 +1,58 @@
+<!--div class="wrapper">
+  <!-- Content Wrapper. Contains page content -->
+  <div class="content-wrapper">
+    <div class="content-header">
+      <div class="container">
+        <div class="row mb-2">
+          <div class="col-sm-6">
+                <!-- Crear grafico -->
+
+            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+            <div>
+              <canvas id="fc" width="2000" height="2000"></canvas>
+            </div>
+
+              <script>
+                const valores = {{valores2}};
+                console.log(valores);
+
+                const ultimos50Valores = valores.slice(-50); // Obtén solo los últimos 50 valores
+
+                 // Obtén el contexto del gráfico
+                const cty = document.getElementById('fc').getContext('2d');
+
+                // Crea el gráfico de línea para los datos de temperatura
+                new Chart(cty, {
+                  type: 'line',
+                  data: {
+                  labels: ultimos50Valores.map((_, index) => index + 1), // Etiquetas del eje X para los últimos 50 valores
+                    datasets: [{
+                      label: 'Frecuencia cardiaca',
+                      data: valores,
+                      borderColor: 'rgba(255, 99, 132, 1)', // Color de la línea del gráfico
+                      borderWidth: 3
+                    }]
+                  },
+                  options: {
+                    scales: {
+                      y: {
+                        beginAtZero: true
+                      }
+                    }
+                  }
+                });
+
+              </script>          
+          </div>
+        </div><!-- /.row -->
+      </div><!-- /.container-fluid -->
+    </div>
+    <div class="container">
+      <div class="row">
+        <div class="col">
+        </div>
+      </div>
+    </div>
+  </div><!-- /.content-wrapper -->
+</div--><!-- /.wrapper -->

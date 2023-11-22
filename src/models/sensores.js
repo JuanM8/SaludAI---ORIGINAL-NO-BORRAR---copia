@@ -23,6 +23,10 @@ const SensoresSchema = new Schema(
       type: Number,
       required: false
     },
+    peso:{
+      type: Number,
+      required: false
+    },
     // Campo para registrar la fecha y hora en que se registraron los datos (se generará automáticamente)
     timestamp: {
       type: Date,

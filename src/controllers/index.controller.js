@@ -17,4 +17,8 @@ indexCtrl.renderHome = (req, res) => {
 indexCtrl.renderSensor = (req, res) => {
   res.render('sensor');
 };
+
+indexCtrl.renderFC = (req, res) => {
+  res.render('fc');
+};
 module.exports = indexCtrl;

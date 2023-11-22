@@ -66,18 +66,21 @@ const User = require('./models/User');
 // En el metodo CRUD (Create, Read, Update & Delete)
 // Dado que solo queremos enviar y recibir los datos de mongoDB no será necesario Update y Delete
 
+
+
 // Endpoint POST para guardar datos en MongoDB:
-// Segun esto, empezará a enviar los datos a la direccion /sensor
+
 app.post('/sensor', async (req, res) => {
   try {
-    const { altura, temperatura, genero, edad, codigo } = req.body.sensores[0]; 
+    const { altura, temperatura, genero, edad, codigo, peso } = req.body.sensores[0]; 
     console.log('Datos recibidos del cliente:');
     console.log('Altura: ', altura);
     console.log('Temperatura: ', temperatura);
-    console.log('Genero: ', genero);
+    console.log('genero: ', genero);
     console.log('Edad: ', edad);
     console.log('Codigo: ', codigo);
-    const sensor = new SensoresModel({ temperatura, altura, genero, edad, codigo });
+    console.log('Peso: ', peso);
+    const sensor = new SensoresModel({ temperatura, altura, genero, edad, codigo, peso });
     await sensor.save();
 
 
@@ -90,10 +93,20 @@ app.post('/sensor', async (req, res) => {
   }
 });
 
+app.post('/prueba', async (req, res) => {
+  try{
+    // Obtiene el mensaje enviado desde el ESP32
+  const mensaje = req.body.mensaje;
 
-// Maneja la solicitud GET a la URL /sensores y renderiza la página "sensor.hbs" con los datos de la base de datos
-// Ruta para manejar solicitudes GET a '/sensores'
-app.get('/sensores', async (req, res) => {
+  // Responde al ESP32
+  res.json({ respuesta: `¿Cómo estás, ESP32? Recibí tu mensaje: ${mensaje}` });
+  } catch(err) {
+    console.error(err);
+    res.status(500).send('Error del servidor');
+  }
+});
+
+app.get('/resultados', async (req, res) => {
   try {
     const latestsensor = await SensoresModel.findOne({ 
       altura: { $ne: null },
@@ -111,7 +124,112 @@ app.get('/sensores', async (req, res) => {
   }
 });
 
-////////////////////4. Crear excel ////////////////////////////
+
+///////////////////////////Recibir frecuencia cardiaca/////////////////////////////////////////
+const XLSX = require('xlsx');
+const ECGModel = require('./models/ecg');
+
+app.post('/enviar-datos', async (req, res) => {
+  try {
+    const datosRecibidos = req.body;
+    const lecturaAnalogica = req.body.lectura_analogica;
+    const ECG = new ECGModel({ lectura_analogica: lecturaAnalogica });
+    await ECG.save();
+
+    console.log("Datos guardados en MongoDB:", ECG);
+
+    // Cargar el archivo Excel si ya existe o crear uno nuevo
+    let workbook;
+    try {
+      workbook = XLSX.readFile('lecturas.xlsx');
+    } catch (error) {
+      workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([]), 'lecturas');
+    }
+
+    // Obtener la primera hoja del libro (si existe)
+    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+
+    // Obtener la última fila ocupada en la hoja
+    const lastRow = XLSX.utils.sheet_to_json(worksheet).length + 2;
+
+    // Convertir los datos de la hoja de trabajo a un arreglo de objetos
+    const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+    // Extraer solo los valores numéricos y almacenarlos en un nuevo arreglo
+    const valores = data.map(objeto => objeto['0']);
+    const valores2 = valores.filter(valor => valor !== null && valor !== undefined);
+    const lecturaData = JSON.stringify(lecturaAnalogica);
+
+    // Agregar nuevos datos a la hoja de cálculo
+    XLSX.utils.sheet_add_json(worksheet, [{ 'lectura_analogica': lecturaAnalogica }], { skipHeader: true, origin: -1 });
+
+    // Escribir el libro de trabajo en el archivo Excel
+    XLSX.writeFile(workbook, 'lecturas.xlsx');
+    //console.log('Datos escritos en el archivo Excel');
+    console.log(lecturaAnalogica);
+    //console.log(data);
+    //console.log(valores2);
+    //console.log(lecturaData);
+    //console.log(typeof lecturaAnalogica);
+
+    //console.log('Valores antes del filtro:', valores);
+   // console.log('Valores después del filtro:', lecturaAnalogica);
+
+    // Enviar una respuesta al ESP32 (opcional)
+    //res.json({ mensaje: 'Datos recibidos correctamente ;D' });
+    res.render('fc', { valores2: JSON.stringify(valores2), datosRecibidos, lecturaAnalogica, lecturaData});
+    
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error del servidor');
+  }  
+});
+
+app.get('/graficas', async (req, res) => {
+  try {
+    // Obtén el código del usuario actual desde la colección 'users'
+    const userId = req.user.id;
+    const usuario = await User.findById(userId);
+    const codigoUsuario = usuario.codigo; // Suponiendo que 'codigo' es el campo en la colección 'users'
+    
+    const temperatura = await SensoresModel.find( {temperatura: { $ne: null}, codigo: codigoUsuario}).select('temperatura');;
+    const altura = await SensoresModel.find( {altura: { $ne: null}, codigo: codigoUsuario}).select('altura');
+    const edad = await SensoresModel.find( {edad: { $ne: null}, codigo: codigoUsuario}).select('edad');
+    const peso = await SensoresModel.find( {peso: { $ne: null}, codigo: codigoUsuario}).select('peso');
+
+    const datos = await SensoresModel.find({ 
+      altura: { $ne: null },
+      temperatura: { $ne: null },
+      genero: { $ne: null },  
+      edad: { $ne: null },
+      peso: {$ne: null},
+      codigo: codigoUsuario
+    }, {}, {});
+
+     // Filtra las temperaturas, alturas, edades y pesos para evitar valores nulos
+     //const temperaturaN = datos.map(dato => dato.temperatura);
+     //const temperaturaArray = temperaturaN.filter(dato => dato !== null);
+    
+     const temperaturaN = datos.map(dato => dato.temperatura);
+     const alturaN = datos.map(dato => dato.altura);
+     const edadN = datos.map(dato => dato.edad);
+     const pesoN = datos.map(dato => dato.peso);
+
+    res.render('graficas', { alturaN: JSON.stringify(alturaN), datos, edadN, pesoN: JSON.stringify(pesoN), temperaturaN: JSON.stringify(temperaturaN)}); // Pasar las constantes a la plantilla
+    console.log(temperaturaN);
+    console.log(alturaN);
+    console.log(edadN);
+    console.log(datos);
+    console.log("Datos obtenidos con éxito 8D");
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error del servidor :(');
+  }
+
+
+});
+
+////////////////////Crear excel ////////////////////////////
 const xl = require('excel4node'); // Para usar la función de excel
 const fs = require('fs');
 
@@ -123,18 +241,36 @@ let fechaAño = date.getUTCFullYear();
 
 app.get("/descargar-excel", async (req, res) => {
   try{
+
+    //Leer los datos de lectura (m)
+    const XLSX = require('xlsx');
+    const workbook = XLSX.readFile('lecturas.xlsx');
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+    const ultimos50Datos = data
+    .flat()
+    .filter(cell => cell !== null && cell !== undefined)
+    .slice(-50);
+  
+  const sumaUltimos50Datos = ultimos50Datos.reduce((acc, valor) => acc + valor, 0);
+  const promedioUltimos50Datos = sumaUltimos50Datos / ultimos50Datos.length;
+
     // Obtén el código del usuario actual desde la colección 'users'
     const userId = req.user.id;
     const usuario = await User.findById(userId);
     const codigoUsuario = usuario.codigo; // Suponiendo que 'codigo' es el campo en la colección 'users'
     const latestsensor1 = await SensoresModel.findOne({
       genero: {$ne: null},
+      codigo: codigoUsuario,
     }, {}, { sort: { 'timestamp': -1 } });
     const actualsensor = await SensoresModel.find({ 
       altura: { $ne: null },
       temperatura: { $ne: null },
       genero: { $ne: null },
       edad: { $ne: null },
+      peso: {$ne: null},
       codigo: codigoUsuario
     }, {}, {});
 
@@ -165,24 +301,23 @@ app.get("/descargar-excel", async (req, res) => {
       }
   });
 
-  //Nombres de las columnas
-  //principales
+  //Nombres de las columnas principales (usuario)
   ws.cell(1, 1).string("Nombre").style(EstiloColumna);
   ws.cell(1, 4).string("Sexo").style(EstiloColumna);
   ws.cell(1, 7).string("Código").style(EstiloColumna);
 
-  // datos obtenidos
+  // Nombres de las columnas (lecturas)
   ws.cell(2, 1).string("Edad").style(EstiloColumna);
   ws.cell(2, 2).string("Altura").style(EstiloColumna);
   ws.cell(2, 3).string("Peso").style(EstiloColumna);
   ws.cell(2, 4).string("Temperatura corporal").style(EstiloColumna);
-  ws.cell(2, 5).string("Promedio de ritmo cardiaco").style(EstiloColumna);
+  ws.cell(2, 5).string("Ritmo cardiaco").style(EstiloColumna);
   ws.cell(2, 6).string("Promedio de oxigeno en sangre").style(EstiloColumna);
 
   // Nombre de la fila nombre y sexo
   ws.cell(1, 2).string(usuario.name).style(EstiloContenido);
   ws.cell(1, 5).string(latestsensor1.genero).style(EstiloContenido);
-  ws.cell(1, 8).number(usuario.codigo).style(EstiloContenido);
+  ws.cell(1, 11).number(usuario.codigo).style(EstiloContenido);
 
   //Integrar datos automaticamente usando un bucle
   // Escribir datos en el archivo Excel
@@ -190,9 +325,13 @@ app.get("/descargar-excel", async (req, res) => {
     const registro = actualsensor[i];
     ws.cell(i + 3, 1).number(registro.edad).style(EstiloContenido);
     ws.cell(i + 3, 2).number(registro.altura).style(EstiloContenido);
+    ws.cell(i + 3, 3).number(registro.peso).style(EstiloContenido);
     ws.cell(i + 3, 4).number(registro.temperatura).style(EstiloContenido);
+
+    // Escribir el promedio de los últimos 50 datos al lado de cada columna correspondiente
+    ws.cell(i + 3, 5).number(promedioUltimos50Datos).style(EstiloContenido);  // Promedio de 'lecturas.xlsx'
   }
-      
+  
   //Ruta del archivo
   const pathExcel = path.join(__dirname, 'excel', nombreArchivo + '.xlsx');
   console.log("Nombre del archivo completo: ", pathExcel); // Imprime el nombre completo del archivo
@@ -224,15 +363,21 @@ app.get("/descargar-excel", async (req, res) => {
   }
 });
 
-  app.get('/generar-pdf', async (req, res) => {
+app.get('/generar-pdf', async (req, res) => {
   try {
     const userId = req.user.id;
+    
     // Consulta la base de datos para obtener las últimas variables almacenadas
     const ultimosDatos = await SensoresModel.find().sort({ timestamp: -1 }).limit(1);
     const usuario = await User.findById(userId);
 
     if (ultimosDatos.length > 0) {
       const ultimoDato = ultimosDatos[0];
+
+      const alturaEnCentimetros = ultimoDato.altura;
+      const alturaEnMetros = alturaEnCentimetros/100;
+      const peso = ultimoDato.peso;
+      const imc = (peso / (alturaEnMetros * alturaEnMetros)); // Ajustar para centímetros
 
       // Crear un nuevo documento PDF
       const doc = new PDFDocument();
@@ -262,10 +407,102 @@ app.get("/descargar-excel", async (req, res) => {
       doc.font('Helvetica').fontSize(12).text(`Temperatura: ${ultimoDato.temperatura} °C`);
       doc.font('Helvetica').fontSize(12).text(`Género: ${ultimoDato.genero}`);
       doc.font('Helvetica').fontSize(12).text(`Edad: ${ultimoDato.edad} años`);
+      doc.font('Helvetica').fontSize(12).text(`Peso: ${ultimoDato.peso} Kg`);
       doc.moveDown();
       doc.font('Helvetica-Bold').fontSize(14).text('Conclusiones y Recomendaciones:', { underline: true });
       doc.moveDown();
-      doc.font('Helvetica').fontSize(12).text('Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed eget ligula nec odio facilisis ultrices. Nulla facilisi. Sed luctus nisi non ligula posuere, vitae fermentum turpis viverra.');
+      doc.font('Helvetica').fontSize(12).text(`IMC: ${imc.toFixed(2)}`);
+      doc.moveDown();
+      if (imc < 18.5){
+        doc.font('Helvetica').fontSize(12).text(`Su indice de masa corporal es insuficiente, ir a nutricionista`);
+      }
+      else if (imc > 18.5 && imc < 25){
+        doc.font('Helvetica').fontSize(12).text(`Su indice de masa corporal es normal, siga así!`);
+      }else{
+        doc.font('Helvetica').fontSize(12).text(`Su indice de masa es alto, ir a nutricionista`);
+      }
+
+      ////////Crear Grafico
+    const lecturaAnalogica = await ECGModel.find({
+      lectura_analogica: {$ne: null} },
+      {},{ timestamp: -1 });
+      
+    console.log(lecturaAnalogica);
+
+    const ultimosDatosLectura = lecturaAnalogica.slice(-200); //Muestra los ultimos 200 datos (para mejorar la precicisión de la gráfica)
+
+    // Extraes solo los valores de lectura_analogica usando el método map
+    const valoresLecturaAnalogica = ultimosDatosLectura.map(item => item.lectura_analogica);
+
+    console.log(valoresLecturaAnalogica);
+
+    // Dibujar el gráfico de barras
+    doc.addPage();
+    const margin = 50;
+    const chartWidth = 400;
+    const chartHeight = 300;
+
+    doc.fontSize(18).text('Lectura del electrocardiograma', margin, margin);
+
+    // Dibujar el gráfico de línea en la segunda página
+    const maxYValue = Math.max(...valoresLecturaAnalogica);
+    const minYValue = Math.min(...valoresLecturaAnalogica);
+    const yScale = (chartHeight - 2 * margin) / (maxYValue - minYValue);
+    const xScale = chartWidth / (valoresLecturaAnalogica.length - 1);
+
+    doc.moveTo(margin, chartHeight + margin - (valoresLecturaAnalogica[0] - minYValue) * yScale);
+    for (let i = 1; i < valoresLecturaAnalogica.length; i++) {
+      const x = margin + i * xScale;
+      const y = chartHeight + margin - (valoresLecturaAnalogica[i] - minYValue) * yScale;
+      doc.lineTo(x, y);
+    }
+    doc.stroke();
+    
+
+    //Segunda prueba
+    doc.addPage();
+   // const margin = 50;
+   // const chartWidth = 400;
+   // const chartHeight = 300;
+    const pageWidth = 612; // Ancho de la página en puntos (por defecto es tamaño carta)
+    const pageHeight = 792; // Altura de la página en puntos (por defecto es tamaño carta)
+
+    // Calcular la posición inicial del gráfico para centrarlo horizontalmente y verticalmente
+    const startX = (pageWidth - chartWidth) / 2;
+    const startY = (pageHeight - chartHeight) / 2;
+
+    doc.fontSize(18).text('Lectura del electrocardiograma', startX, startY - 30, { align: 'center' });
+
+    // Dibujar el gráfico de línea en la segunda página
+   // const maxYValue = Math.max(...valoresLecturaAnalogica);
+    //const minYValue = Math.min(...valoresLecturaAnalogica);
+    //const yScale = (chartHeight - 2 * margin) / (maxYValue - minYValue);
+    //const xScale = chartWidth / (valoresLecturaAnalogica.length - 1);
+
+    const graphStartX = startX + margin;
+    const graphStartY = startY + chartHeight + margin;
+
+    doc.moveTo(graphStartX, graphStartY - (valoresLecturaAnalogica[0] - minYValue) * yScale);
+    for (let i = 1; i < valoresLecturaAnalogica.length; i++) {
+      const x = graphStartX + i * xScale;
+      const y = graphStartY - (valoresLecturaAnalogica[i] - minYValue) * yScale;
+      doc.lineTo(x, y);
+    }
+    doc.stroke('blue'); // Cambiar el color del gráfico a azul
+
+    // Añadir valores en el eje X (horizontal)
+    const xAxisValues = ['0', '50', '100', '150', '200']; // Valores que quieres mostrar en el eje X
+    xAxisValues.forEach((value, index) => {
+      const xPosition = graphStartX + index * (chartWidth / (xAxisValues.length - 1)); // Calcular la posición X del valor
+      doc.fontSize(10).text(value, xPosition, graphStartY + 10, { align: 'center' }); // Añadir texto en la posición calculada
+    });
+
+    // Añadir valores en el eje Y (vertical)
+    const yAxisValues = ['0', '25', '50', '75', '100']; // Valores que quieres mostrar en el eje Y
+    yAxisValues.forEach((value, index) => {
+      const yPosition = graphStartY - index * (chartHeight / (yAxisValues.length - 1)); // Calcular la posición Y del valor
+      doc.fontSize(10).text(value, graphStartX - 30, yPosition, { align: 'right' }); // Añadir texto en la posición calculada
+    });
 
       // Finalizar el PDF
       doc.end();
@@ -277,4 +514,5 @@ app.get("/descargar-excel", async (req, res) => {
     res.status(500).send('Error al recuperar datos de MongoDB');
   }
 });
+
 module.exports = app;

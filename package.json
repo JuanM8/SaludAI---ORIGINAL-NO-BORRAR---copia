@@ -27,7 +27,9 @@
     "morgan": "^1.10.0",
     "nodemailer": "^6.4.17",
     "passport": "^0.4.1",
-    "passport-local": "^1.0.0"
+    "passport-local": "^1.0.0",
+    "pdfkit": "^0.13.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "dotenv": "^8.6.0",

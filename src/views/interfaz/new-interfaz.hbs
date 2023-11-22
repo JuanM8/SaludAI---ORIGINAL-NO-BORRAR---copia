@@ -1,60 +1,22 @@
-<div class="col-md-4 mx-auto">
-  <div class="card text-center">
-    <div class="card-header">
-      <h3>Ingrese los datos del sensor a registrar</h3>
-    </div>
-    <div class="card-body">
-      <form action="/interfaz/new-sensor" method="POST" id="sensorForm">
-        <div class="form-group">
-          <input type="text" name="name" class="form-control" placeholder="Admin del sensor" autofocus />
-        </div>
-        <div class="form-group">
-          <input type="text" name="ubicacion" class="form-control" placeholder="Ubicacion" />
-        </div>
-        <div class="form-group">
-          <label for="n_sensor">Seleccione el número de sensores:</label>
-          <select name="n_sensor" class="form-control" id="n_sensor" onchange="mostrarSensoresAdicionales()">
-            <option value="0">Seleccione</option>
-            <option value="1">1</option>
-            <option value="2">2</option>
-            <option value="3">3</option>
-            <!-- Agrega más opciones si es necesario -->
-          </select>
-        </div>
+{{!-- <body class="hold-transition layout-top-nav"></body> --}}
+<div class="wrapper">
 
-        <!-- Div para agregar selecciones de sensores -->
-        <div id="sensores-adicionales"></div>
+  <!-- Content Wrapper. Contains page content -->
+  <div class="content-wrapper">
 
-        <div class="form-group">
-          <button class="btn btn-block" style="background-color: #B0E57C; color: #fff;" type="submit">Guardar</button>
-        </div>
-      </form>
+    <div class="content-header">
+      <div class="container">
+        <div class="row mb-2">
+          <div class="col-sm-6">
+            <h1 class="m-0 text-dark"> Resultados de las mediciones <small> </small></h1>
+            <br>
+            <a href="/generar-pdf" class="btn btn-primary">Descargar PDF</a>
+            <br>
+            <a type="button" class="btn btn-success" href="/descargar-excel">Descargar excel</a> <br>
+          </div><!-- /.col -->
+        </div><!-- /.row -->
+      </div><!-- /.container-fluid -->
     </div>
   </div>
 </div>
-
-<script>
-  function mostrarSensoresAdicionales() {
-    const selectElement = document.getElementById("n_sensor");
-    const sensoresAdicionalesDiv = document.getElementById("sensores-adicionales");
-    sensoresAdicionalesDiv.innerHTML = ""; // Limpiar contenido previo
-
-    const numeroSensores = parseInt(selectElement.value, 10);
-
-    for (let i = 1; i <= numeroSensores; i++) {
-      const divSensor = document.createElement("div");
-      divSensor.className = "form-group";
-      divSensor.innerHTML = `
-        <label for="sensor_${i}">Sensor ${i}:</label>
-        <select name="sensor_${i}" class="form-control">
-          <option value="Temperatura">Temperatura</option>
-          <option value="Humedad">Humedad</option>
-          <option value="Voltaje">Voltaje</option>
-          <option value="Corriente">Corriente</option>
-          <!-- Agrega más opciones si es necesario -->
-        </select>
-      `;
-      sensoresAdicionalesDiv.appendChild(divSensor);
-    }
-  }
-</script>
+<!-- ./wrapper -->
